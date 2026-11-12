@@ -1,6 +1,6 @@
 # EcoSentinel 2.0 — Qashqadaryo geoekologik monitoring
 
-Next.js 15 + Google Earth Engine (servis akkaunt) + Leaflet. Frontend va API bitta loyihada.
+Next.js 16 + Google Earth Engine (servis akkaunt) + Leaflet. Frontend va API bitta loyihada.
 
 ## Ishga tushirish
 
