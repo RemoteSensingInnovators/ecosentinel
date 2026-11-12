@@ -1,0 +1,9 @@
+node_modules
+.next
+.env*.local
+*.json.key
+gee-service-account.json
+.vercel
+next-env.d.ts
+*.log
+tsconfig.tsbuildinfo

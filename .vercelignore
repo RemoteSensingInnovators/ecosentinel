@@ -1,0 +1,9 @@
+# Maxfiy kalitlar va mahalliy fayllar Vercelga yuklanmaydi
+.env
+.env*.local
+*.json.key
+gee-service-account.json
+node_modules
+.next
+*.log
+tsconfig.tsbuildinfo
