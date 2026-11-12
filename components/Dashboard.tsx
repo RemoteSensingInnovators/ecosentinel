@@ -99,6 +99,7 @@ export default function Dashboard() {
   const [showPlants, setShowPlants] = useState(true);
   const [districtsGj, setDistrictsGj] = useState<DistrictsGj | null>(null);
   const [health, setHealth] = useState<"wait" | "ok" | "busy" | "fail">("wait");
+  const [healthErr, setHealthErr] = useState("");
   const [lulcClass, setLulcClass] = useState(6);
   const [menuOpen, setMenuOpen] = useState(false);
   const hydrated = useRef(false);
@@ -129,8 +130,12 @@ export default function Dashboard() {
   useEffect(() => {
     fetch("/districts.geojson").then((r) => r.json()).then(setDistrictsGj).catch(() => {});
     fetch("/api/health", { signal: AbortSignal.timeout(30000) })
-      .then(async (r) => { const j = await r.json().catch(() => ({})); setHealth(!r.ok ? "fail" : j.busy ? "busy" : "ok"); })
-      .catch(() => setHealth("fail"));
+      .then(async (r) => {
+        const j = await r.json().catch(() => ({}));
+        setHealth(!r.ok ? "fail" : j.busy ? "busy" : "ok");
+        if (!r.ok) setHealthErr(typeof j.error === "string" ? j.error : `HTTP ${r.status}`);
+      })
+      .catch((e) => { setHealth("fail"); setHealthErr(e instanceof Error ? e.message : String(e)); });
   }, []);
 
   useEffect(() => { if (cat && mode === "classes") setMode("continuous"); }, [cat, mode]);
@@ -231,7 +236,7 @@ export default function Dashboard() {
         <div className="top-meta">
           <span className="pill">{YEARS[0]}–{YEARS[YEARS.length - 1]}</span>
           <span className="pill">14 tuman</span>
-          <span className={`status ${health}`}><i />{health === "ok" ? "Earth Engine ulangan" : health === "busy" ? "Earth Engine band" : health === "fail" ? "GEE bilan aloqa yo‘q" : "GEE tekshirilmoqda"}</span>
+          <span className={`status ${health}`} title={healthErr || undefined}><i />{health === "ok" ? "Earth Engine ulangan" : health === "busy" ? "Earth Engine band" : health === "fail" ? (healthErr.includes("GEE_SERVICE_ACCOUNT_KEY") ? "GEE kaliti sozlanmagan" : "GEE bilan aloqa yo‘q") : "GEE tekshirilmoqda"}</span>
         </div>
       </header>
 

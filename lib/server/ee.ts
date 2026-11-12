@@ -3,11 +3,33 @@ import ee from "@google/earthengine";
 
 let ready: Promise<void> | null = null;
 
-function loadKey(): { project_id: string; client_email: string; private_key: string } {
-  const raw = process.env.GEE_SERVICE_ACCOUNT_KEY;
-  if (!raw) throw new Error("GEE_SERVICE_ACCOUNT_KEY muhit o‘zgaruvchisi topilmadi");
-  const text = raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");
-  return JSON.parse(text);
+export interface ServiceKey { project_id: string; client_email: string; private_key: string }
+let parsedKey: ServiceKey | null = null;
+
+/**
+ * Service account kaliti GEE_SERVICE_ACCOUNT_KEY dan o'qiladi: JSON matnining o'zi yoki uning base64 ko'rinishi.
+ * .env dagidek bittalik qo'shtirnoq ichida joylangan qiymat va private_key ichidagi "\n" qochirilgan holat ham qabul qilinadi.
+ */
+export function loadKey(): ServiceKey {
+  return (parsedKey ??= parseServiceKey(process.env.GEE_SERVICE_ACCOUNT_KEY));
+}
+
+export function parseServiceKey(value: string | undefined): ServiceKey {
+  let raw = (value ?? "").trim();
+  if (!raw) {
+    throw new Error("GEE_SERVICE_ACCOUNT_KEY muhit o‘zgaruvchisi topilmadi (Vercel: Settings → Environment Variables)");
+  }
+  if (raw.length > 1 && raw.startsWith("'") && raw.endsWith("'")) raw = raw.slice(1, -1).trim();
+  let k: Partial<ServiceKey> | null = null;
+  try {
+    k = JSON.parse(raw.startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8"));
+  } catch {
+    /* pastda umumiy xabar beriladi */
+  }
+  if (!k || typeof k !== "object" || !k.client_email || !k.private_key) {
+    throw new Error("GEE_SERVICE_ACCOUNT_KEY formati noto‘g‘ri: service account JSON fayl matni (yoki uning base64 ko‘rinishi) kerak");
+  }
+  return { project_id: k.project_id ?? "", client_email: k.client_email, private_key: k.private_key.replace(/\\n/g, "\n") };
 }
 
 export function initEE(): Promise<void> {

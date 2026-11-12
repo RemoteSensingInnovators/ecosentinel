@@ -1,5 +1,5 @@
 import { createSign } from "node:crypto";
-import { ee, cached, getMapUrl } from "./ee";
+import { ee, cached, getMapUrl, loadKey } from "./ee";
 import { classify, displayCalib, displayImage, rawImage } from "./composites";
 import { CLASS_LABELS, DIFF_PALETTE, LAYERS, LULC_CLASSES, isLayer, isSeason, isYear, type LayerKey, type SeasonKey } from "../layers";
 
@@ -87,14 +87,9 @@ export async function tileUrlFor(spec: RenderSpec): Promise<{ url: string; legen
 /* ---------- Tile proksi: image:computePixels (faqat computations ruxsati kerak) ---------- */
 let token: { value: string; exp: number } | null = null;
 
-function key() {
-  const raw = process.env.GEE_SERVICE_ACCOUNT_KEY!;
-  return JSON.parse(raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8"));
-}
-
 export async function accessToken(): Promise<string> {
   if (token && Date.now() < token.exp - 120_000) return token.value;
-  const k = key();
+  const k = loadKey();
   const now = Math.floor(Date.now() / 1000);
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
   const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({
@@ -184,7 +179,7 @@ async function computeTile(spec: RenderSpec, z: number, x: number, y: number, si
       crsCode: "EPSG:3857",
     },
   };
-  const project = process.env.GEE_PROJECT || key().project_id;
+  const project = process.env.GEE_PROJECT || loadKey().project_id;
   for (let attempt = 0; ; attempt++) {
     const r = await fetch(`https://earthengine.googleapis.com/v1/projects/${project}/image:computePixels`, {
       method: "POST",
